@@ -29,7 +29,7 @@ struct bc_domain_names
 	size_t domain_type_len[DOMAIN_TYPE_NUM];     ///< 各类 域名集合 的长度
 	size_t domain_type_max_len[DOMAIN_TYPE_NUM];  ///< 各类域名 集合最大长度
 
-	struct domain_name[];     ///< 域名数组
+	struct domain_name names[];     ///< 域名数组
 };
 
 #endif // _BC_DOMAIN_NAME_H_

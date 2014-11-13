@@ -1,0 +1,8 @@
+CC:=g++
+.PHONY: clean all
+all: bc_domain_names
+bc_domain_names: bc_domain_names.o
+
+clean:
+	-rm bc_domain_names
+	-rm *.o

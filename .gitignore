@@ -1,0 +1,11 @@
+*.o
+bc_domain_names
+
+*.ko
+Module.*
+modules.*
+.bc_domain_search.*
+.tmp_versions
+bc_domain_search.mod.c
+
+*.swp
