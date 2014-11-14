@@ -1,7 +1,10 @@
 CC:=g++
 .PHONY: clean all
+LDFLAGS+=-lbigmem
+CXXFLAGS+=-DUSER_SPACE
+
 all: bc_domain_names
-bc_domain_names: bc_domain_names.o
+bc_domain_names: bc_domain_names.o bc_domain_db.o
 
 clean:
 	-rm bc_domain_names

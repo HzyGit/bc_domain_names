@@ -17,6 +17,7 @@
 #include <error.h>
 #include <getopt.h>
 
+#include <bigmem.h>
 #include "bc_domain_names.h"
 #define MAX_PATH 512
 const char *g_program="bc_domain_name";

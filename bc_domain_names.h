@@ -8,6 +8,7 @@
 #ifndef _BC_DOMAIN_NAME_H_
 #define _BC_DOMAIN_NAME_H_
 
+#include <bigmem.h>
 /// bigmem的内存proc映射
 #define PROC_NAME "bc_domain_mem"
 #define PROC_PATH "/proc/"PROC_NAME
@@ -54,8 +55,40 @@ struct bc_domain_names
 	size_t domain_type_start[DOMAIN_TYPE_NUM];   ///< 各类 域名集合 起始索引
 	size_t domain_type_len[DOMAIN_TYPE_NUM];     ///< 各类 域名集合 的长度
 	size_t domain_type_max_len[DOMAIN_TYPE_NUM];  ///< 各类域名 集合最大长度
-
 	struct domain_name names[];     ///< 域名数组
 };
+
+/// 域名集 数据结构
+struct bc_domain_db
+{
+	struct bc_domain_names domain_names;  
+	struct big_mem mem;
+};
+
+#ifndef USER_SPACE
+
+/// @brief 内核函数，初始化bc_domain_db
+int init_bc_domain_db(struct bc_domain_db *db);
+/// @brief 内核函数, 清除bc_domain_db，并释放内存
+int clean_bc_domain_db(struct bc_domain_db *db);
+
+#else   ///USE_SPACE
+
+/// @brief 用户函数,从文件中反序列化db结构
+int load_bc_domain_db(const char *path,struct bc_domain_db *db);
+void unload_bc_domain_db(struct bc_domain_db *db);
+
+#endif  /// USER_SPACE
+
+/// @brief 返回db中域名个数
+size_t get_domain_name_num(struct bc_domain_db *db,enum domain_type type);
+
+/// @brief 返回db中第i个域名
+/// @retval 成功0 失败错误代码的负值
+int get_domain_name(struct domain_name *name,struct bc_domain_db *db,enum domain_type type,size_t index);
+
+/// @brief 设置db中第i个域名
+/// @retval 成功0 失败错误代码的负值
+int set_domain_name(const struct domain_name *name,struct bc_domain_db *db,enum domain_type type,size_t index);
 
 #endif // _BC_DOMAIN_NAME_H_
