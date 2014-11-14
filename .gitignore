@@ -9,3 +9,4 @@ modules.*
 bc_domain_search.mod.c
 
 *.swp
+tags
