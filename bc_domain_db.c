@@ -17,9 +17,8 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <unistd.h>
-extern "C" {
+
 #include "bc_domain_names.h"
-};
 
 #endif /// USER_SPACE
 
@@ -93,6 +92,19 @@ int load_bc_domain_db(const char *path,struct bc_domain_db *db)
 void unload_bc_domain_db(struct bc_domain_db *db)
 {
 	unmmap_clean_bigmem(&db->mem);
+}
+
+/// @breif 整理数据结构中的内存，避免碎片
+void defrag_mentation(struct bc_domain_db *db,enum domain_type type)
+{
+}
+
+/// @brief 设置更新标识
+void set_update_domain_db(struct bc_domain_db *db,bool isupdate)
+{
+	if(NULL==db)
+		return;
+	db->domain_names.is_update=isupdate;
 }
 
 #endif

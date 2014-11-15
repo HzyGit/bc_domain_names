@@ -234,67 +234,69 @@ static void parse_argument(int argc,char **argv)
 }
 
 /// @breif 向bc_domain数据库中添加数据
-static int add_bc_domain(const struct argument *argu)
+static int add_bc_domain(const struct argument *argu,struct bc_domain_db *db)
 {
 	return 0;
 }
 
 /// @breif 向bc_domain数据库中删除数据
-static int del_bc_domain(const struct argument *argu)
+static int del_bc_domain(const struct argument *argu,struct bc_domain_db *db)
 {
 	return 0;
 }
 
 /// @breif 搜索bc_domain数据库数据
-static int search_bc_domain(const struct argument *argu)
+static int search_bc_domain(const struct argument *argu,struct bc_domain_db *db)
 {
 	return 0;
 }
 
 /// @brief 重建bc_domain数据库中数据
-static int build_bc_domain_db(const struct argument *argu)
+static int build_bc_domain_db(const struct argument *argu,struct bc_domain_db *db)
 {
 	return 0;
 }
 
 /// @brief 读取bc_domain数据库中
-static int read_bc_domain_db()
+static int read_bc_domain_db(struct bc_domain_db *db)
 {
 	return 0;
 }
 
 /// @brief 依据struct argument完成对bc_domain数据库的处理
-static int bc_domain_handle(const struct argument *argu)
+static int bc_domain_handle(const struct argument *argu,struct bc_domain_db *db)
 {
 	int err=0;
+	if(NULL==db||NULL==argu)
+		return -EINVAL;
 	switch(argu->handle)
 	{
 		case ADD_HANDLE:
 			DEBUG_PRINT(0,"begin add handle for %s,%s",
 					argu->argu.domain.name,
 					g_domain_type[argu->argu.domain.type]);
-			err=add_bc_domain(argu);
+			err=add_bc_domain(argu,db);
 			break;
 		case DEL_HANDLE:
 			DEBUG_PRINT(0,"begin del handle for %s,%s",
 					argu->argu.domain.name,
 					g_domain_type[argu->argu.domain.type]);
-			err=del_bc_domain(argu);
+			err=del_bc_domain(argu,db);
 			break;
 		case SEARCH_HANDLE:
 			DEBUG_PRINT(0,"begin search handle for %s,%s",
 					argu->argu.domain.name,
 					g_domain_type[argu->argu.domain.type]);
-			err=search_bc_domain(argu);
+			err=search_bc_domain(argu,db);
 			break;
 		case READ_HANDLE:
 			DEBUG_PRINT(0,"%s","begin read handle");
-			err=read_bc_domain_db();
+			err=read_bc_domain_db(db);
 			break;
 		case BUILD_HANDLE:
 			DEBUG_PRINT(0,"begin build handle for %s,%s",
 					argu->argu.dbfile.path,argu->argu.dbfile.type);
-			err=build_bc_domain_db(argu);
+			err=build_bc_domain_db(argu,db);
 			break;
 		default:
 			fprintf(stderr,"cannot support current handle,and exit!\n");
@@ -307,8 +309,18 @@ static int bc_domain_handle(const struct argument *argu)
 int main(int argc,char **argv)
 {
 	int err=0;
+
+	/// 载入冰川域名数据库
+	struct bc_domain_db db; 
+	if((load_bc_domain_db(PROC_PATH,&db))<0)
+	{
+		error_at_line(0,-err,__FILE__,__LINE__,"bc_domain_db load error");
+		return err;
+	}
+	/// 解析命令行参数
 	parse_argument(argc,argv);
-	if((err=bc_domain_handle(&g_argu))<0)
+	/// 处理结果
+	if((err=bc_domain_handle(&g_argu,&db))<0)
 		error_at_line(0,-err,__FILE__,__LINE__,"bc_domain_handle error");
 	DEBUG_PRINT(0,"bc_domain_handle ok!");
 	return 0;
