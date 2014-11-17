@@ -9,6 +9,8 @@ modules.*
 .bc_domain_db.*
 .tmp_versions
 bc_domain_mem.mod.c
+.exrc
 
-*.swp
 tags
+
+domain_files/

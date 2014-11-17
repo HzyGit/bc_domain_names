@@ -51,6 +51,7 @@ int init_bc_domain_db(struct bc_domain_db *db)
 			sizeof(db->domain_names.domain_type_len));
 	for(i=0;i<DOMAIN_TYPE_NUM;i++)
 		db->domain_names.domain_type_max_len[i]=max_len[i];
+	sum=sizeof(struct bc_domain_names);
 	for(i=0;i<DOMAIN_TYPE_NUM;i++)
 	{
 		db->domain_names.domain_type_start[i]=sum;
@@ -61,8 +62,14 @@ int init_bc_domain_db(struct bc_domain_db *db)
 					DOMAIN_MAX_COUNT*sizeof(struct domain_name)+sizeof(struct bc_domain_names),
 					GFP_KERNEL))<0)
 	{
-		printk(KERN_ERR "init_bigmem error");
+		printk(KERN_ERR "init_bigmem error\n");
 		return err;
+	}
+	/// bc_domain_name
+	if((err=save_bc_domain_names(db))<0)
+	{
+		printk(KERN_ERR "write bc_domain_names error\n");
+		clean_bigmem(&db->mem);
 	}
 	return err;
 }
@@ -151,7 +158,11 @@ int set_update_domain_db(struct bc_domain_db *db,bool isupdate)
 		return -EINVAL;
 	db->domain_names.is_update=isupdate;
 	/// 写入内存
+#ifdef USER_SPACE
 	if((err=write_bigmem(&db->mem,0,&db->domain_names,sizeof(struct bc_domain_names)))<0)
+#else
+	if((err=write_bigmem_bh(&db->mem,0,&db->domain_names,sizeof(struct bc_domain_names)))<0)
+#endif
 	{
 #ifndef USER_SPACE
 		printk(KERN_ERR "write_bigmem error");
@@ -168,7 +179,7 @@ size_t get_domain_name_num(struct bc_domain_db *db,enum domain_type type)
 {
 	if(NULL==db)
 		return 0;
-	if(DOMAIN_TYPE_NUM==type)
+	if(DOMAIN_TYPE_NUM<=type)
 		return -EFAULT;
 	return db->domain_names.domain_type_len[type];
 }
@@ -186,9 +197,15 @@ int get_domain_name(struct domain_name *name,struct bc_domain_db *db,enum domain
 	if(index>=db->domain_names.domain_type_len[type])
 		return -EFAULT;
 	/// 获取内存
+#ifdef USER_SPACE
 	if((err=read_bigmem(&db->mem,
 					db->domain_names.domain_type_start[type]+index*sizeof(struct domain_name),
 					name,sizeof(struct domain_name)))<0)
+#else
+	if((err=read_bigmem_bh(&db->mem,
+					db->domain_names.domain_type_start[type]+index*sizeof(struct domain_name),
+					name,sizeof(struct domain_name)))<0)
+#endif
 	{
 #ifdef USER_SPACE
 		error_at_line(0,-err,__FILE__,__LINE__,"read_bigmem error");
@@ -213,9 +230,15 @@ int set_domain_name(const struct domain_name *name,struct bc_domain_db *db,enum 
 	if(index>=db->domain_names.domain_type_len[type])
 		return -EFAULT;
 	/// 设置内存
+#ifdef USER_SPACE
 	if((err=write_bigmem(&db->mem,
 				db->domain_names.domain_type_start[type]+index*sizeof(struct domain_name),
 				name,sizeof(struct domain_name)))<0)
+#else
+	if((err=write_bigmem_bh(&db->mem,
+				db->domain_names.domain_type_start[type]+index*sizeof(struct domain_name),
+				name,sizeof(struct domain_name)))<0)
+#endif
 	{
 #ifdef USER_SPACE
 		error_at_line(0,-err,__FILE__,__LINE__,"write_bigmem error");
@@ -225,5 +248,18 @@ int set_domain_name(const struct domain_name *name,struct bc_domain_db *db,enum 
 		return err;
 	}
 	return 0;
+}
+
+/// @brief 保存bc_domain_names结构
+/// @retval 成功返回0 失败错误代码负值
+int save_bc_domain_names(struct bc_domain_db *db)
+{
+	if(NULL==db)
+		return 0;
+#ifndef USER_SPACE
+	return write_bigmem_bh(&db->mem,0,&db->domain_names,sizeof(struct bc_domain_names));
+#else
+	return write_bigmem(&db->mem,0,&db->domain_names,sizeof(struct bc_domain_names));
+#endif
 }
 

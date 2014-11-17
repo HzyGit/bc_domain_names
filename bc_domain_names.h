@@ -107,5 +107,7 @@ int get_domain_name(struct domain_name *name,struct bc_domain_db *db,enum domain
 /// @retval 成功0 失败错误代码的负值
 int set_domain_name(const struct domain_name *name,struct bc_domain_db *db,enum domain_type type,size_t index);
 
-
+/// @briefe 保存bc_domain_names结构
+/// @retval 成功返回0 失败返回错误代码负值
+int save_bc_domain_names(struct bc_domain_db *db);
 #endif // _BC_DOMAIN_NAME_H_

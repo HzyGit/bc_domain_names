@@ -1,6 +1,6 @@
 .PHONY: clean all
 LDFLAGS+=-lbigmem
-CFLAGS+=-DUSER_SPACE
+CFLAGS+=-DUSER_SPACE -g
 CC:=gcc
 all: bc_domain_names
 bc_domain_names: bc_domain_names_user.o bc_domain_db_user.o
