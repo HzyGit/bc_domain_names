@@ -9,11 +9,13 @@
 #define _BC_DOMAIN_NAME_H_
 
 /// 头文件
-#include <bingchuan/bigmem.h>
+
 
 #ifndef USER_SPACE
+#include <bingchuan/bigmem.h>
 #else
 #include <stdbool.h>
+#include <bigmem.h>
 #endif
 
 /// bigmem的内存proc映射

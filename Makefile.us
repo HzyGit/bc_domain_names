@@ -1,10 +1,15 @@
 .PHONY: clean all
 LDFLAGS+=-lbigmem
 CFLAGS+=-DUSER_SPACE
-cc:=gcc
+CC:=gcc
 all: bc_domain_names
-bc_domain_names: bc_domain_names.o bc_domain_db.o
+bc_domain_names: bc_domain_names_user.o bc_domain_db_user.o
+	$(CC) $(CFLAGS) $(LDFLAGS) -o bc_domain_names bc_domain_names_user.o bc_domain_db_user.o
+bc_domain_names_user.o: bc_domain_names.h bc_domain_names.c
+	$(CC) $(CFLAGS) -o bc_domain_names_user.o -c bc_domain_names.c
+bc_domain_db_user.o: bc_domain_names.h  bc_domain_db.c
+	$(CC) $(CFLAGS) -o bc_domain_db_user.o -c bc_domain_db.c
 
 clean:
 	-rm bc_domain_names
-	-rm *.o
+	-rm *_user.o
