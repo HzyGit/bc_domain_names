@@ -4,9 +4,11 @@ bc_domain_names
 *.ko
 Module.*
 modules.*
+.bc_domain_mem.*
 .bc_domain_search.*
+.bc_domain_db.*
 .tmp_versions
-bc_domain_search.mod.c
+bc_domain_mem.mod.c
 
 *.swp
 tags

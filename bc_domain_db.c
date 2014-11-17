@@ -5,8 +5,16 @@
  * @date 2014-11-14
  */
 
+#include "bc_domain_names.h"
+
 #ifndef USER_SPACE
+
+#include <linux/module.h>
+#include <linux/init.h>
+#include <linux/kernel.h>
+
 #else  /// USER_SPACE
+
 #include <errno.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -18,20 +26,53 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-#include "bc_domain_names.h"
-
 #endif /// USER_SPACE
+
+#include "bc_domain_names.h"
 
 #ifndef USER_SPACE
 /// @brief 内核函数，初始化bc_domain_db
 int init_bc_domain_db(struct bc_domain_db *db)
 {
-	return 0;
+	int i=0;
+	int err=0;
+	size_t sum=0;
+	size_t max_len[DOMAIN_TYPE_NUM]={
+		WEBPAGE_DOMAIN_MAX_COUNT,
+		BLANK_DOMAIN_MAX_COUNT,
+		DOWNLOAD_DOMAIN_MAX_COUNT,
+		MULTIMEDIA_DOMAIN_MAX_COUNT,
+		INTERNATIONAL_DOMAIN_MAX_COUNT,
+		SHOPPING_DOMAIN_MAX_COUNT
+	};
+	/// 初始化bc_domain_names
+	db->domain_names.is_update=false;
+	memset(db->domain_names.domain_type_len,0,
+			sizeof(db->domain_names.domain_type_len));
+	for(i=0;i<DOMAIN_TYPE_NUM;i++)
+		db->domain_names.domain_type_max_len[i]=max_len[i];
+	for(i=0;i<DOMAIN_TYPE_NUM;i++)
+	{
+		db->domain_names.domain_type_start[i]=sum;
+		sum+=max_len[i];
+	}
+	/// 初始化bigmem
+	if((err=init_bigmem(&db->mem,
+					DOMAIN_MAX_COUNT*sizeof(struct domain_name)+sizeof(struct bc_domain_names),
+					GFP_KERNEL))<0)
+	{
+		printk(KERN_ERR "init_bigmem error");
+		return err;
+	}
+	return err;
 }
 
 /// @brief 内核函数, 清除bc_domain_db，并释放内存
 int clean_bc_domain_db(struct bc_domain_db *db)
 {
+	memset(&db->domain_names,0,sizeof(struct bc_domain_names));
+	/// 清除内存
+	clean_bigmem(&db->mem);
 	return 0;
 }
 
@@ -99,15 +140,28 @@ void defrag_mentation(struct bc_domain_db *db,enum domain_type type)
 {
 }
 
+#endif
+
 /// @brief 设置更新标识
-void set_update_domain_db(struct bc_domain_db *db,bool isupdate)
+int set_update_domain_db(struct bc_domain_db *db,bool isupdate)
 {
+	int err=0;
+
 	if(NULL==db)
-		return;
+		return -EINVAL;
 	db->domain_names.is_update=isupdate;
+	/// 写入内存
+	if((err=write_bigmem(&db->mem,0,&db->domain_names,sizeof(struct bc_domain_names)))<0)
+	{
+#ifndef USER_SPACE
+		printk(KERN_ERR "write_bigmem error");
+#else
+		error_at_line(0,-err,__FILE__,__LINE__,"write_bigmem error");
+#endif
+	}
+	return err;
 }
 
-#endif
 
 /// @brief 返回db中域名个数
 size_t get_domain_name_num(struct bc_domain_db *db,enum domain_type type)
@@ -123,6 +177,7 @@ size_t get_domain_name_num(struct bc_domain_db *db,enum domain_type type)
 /// @retval 成功0 失败错误代码的负值
 int get_domain_name(struct domain_name *name,struct bc_domain_db *db,enum domain_type type,size_t index)
 {
+	int err=0;
 	/// 判断参数
 	if(NULL==db)
 		return -EINVAL;
@@ -131,12 +186,15 @@ int get_domain_name(struct domain_name *name,struct bc_domain_db *db,enum domain
 	if(index>=db->domain_names.domain_type_len[type])
 		return -EFAULT;
 	/// 获取内存
-	int err=0;
 	if((err=read_bigmem(&db->mem,
 					db->domain_names.domain_type_start[type]+index*sizeof(struct domain_name),
 					name,sizeof(struct domain_name)))<0)
 	{
+#ifdef USER_SPACE
 		error_at_line(0,-err,__FILE__,__LINE__,"read_bigmem error");
+#else
+		printk(KERN_ERR "read_bigmem error");
+#endif
 		return err;
 	}
 	return 0;
@@ -146,6 +204,8 @@ int get_domain_name(struct domain_name *name,struct bc_domain_db *db,enum domain
 /// @retval 成功0 失败错误代码的负值
 int set_domain_name(const struct domain_name *name,struct bc_domain_db *db,enum domain_type type,size_t index)
 {
+	int err=0;
+
 	if(NULL==db)
 		return -EINVAL;
 	if(DOMAIN_TYPE_NUM==type)
@@ -153,12 +213,15 @@ int set_domain_name(const struct domain_name *name,struct bc_domain_db *db,enum 
 	if(index>=db->domain_names.domain_type_len[type])
 		return -EFAULT;
 	/// 设置内存
-	int err=0;
-	if(err=write_bigmem(&db->mem,
+	if((err=write_bigmem(&db->mem,
 				db->domain_names.domain_type_start[type]+index*sizeof(struct domain_name),
-				name,sizeof(struct domain_name))<0)
+				name,sizeof(struct domain_name)))<0)
 	{
+#ifdef USER_SPACE
 		error_at_line(0,-err,__FILE__,__LINE__,"write_bigmem error");
+#else
+		printk(KERN_ERR "write_bigmem error");
+#endif
 		return err;
 	}
 	return 0;

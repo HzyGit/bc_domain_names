@@ -9,7 +9,7 @@
 #define _BC_DOMAIN_NAME_H_
 
 /// 头文件
-#include <bigmem.h>
+#include <bingchuan/bigmem.h>
 
 #ifndef USER_SPACE
 #else
@@ -88,10 +88,11 @@ void unload_bc_domain_db(struct bc_domain_db *db);
 /// @breif 整理数据结构中的内存，避免碎片
 void defrag_mentation(struct bc_domain_db *db,enum domain_type type);
 
-/// @brief 设置更新标识
-void set_update_domain_db(struct bc_domain_db *db,bool isupdate);
 
 #endif  /// USER_SPACE
+
+/// @brief 设置更新标识
+int set_update_domain_db(struct bc_domain_db *db,bool isupdate);
 
 /// @brief 返回db中域名个数
 size_t get_domain_name_num(struct bc_domain_db *db,enum domain_type type);
