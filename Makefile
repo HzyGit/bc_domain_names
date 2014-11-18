@@ -1,5 +1,6 @@
 .PHONY: clean all tar init
 obj-m+=bc_domain_mem.o
+obj-m+=test.o
 bc_domain_mem-y:=bc_domain_search.o bc_domain_db.o
 
 all:

@@ -7,8 +7,10 @@ modules.*
 .bc_domain_mem.*
 .bc_domain_search.*
 .bc_domain_db.*
+bc_domain_mem.mod.*
 .tmp_versions
-bc_domain_mem.mod.c
+.test.*
+test.mod.c
 .exrc
 
 tags

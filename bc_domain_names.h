@@ -110,4 +110,8 @@ int set_domain_name(const struct domain_name *name,struct bc_domain_db *db,enum 
 /// @briefe 保存bc_domain_names结构
 /// @retval 成功返回0 失败返回错误代码负值
 int save_bc_domain_names(struct bc_domain_db *db);
+
+/// @briefe 保存bc_domain_names结构
+/// @retval 成功返回0 失败返回错误代码负值
+int save_bc_domain_names(struct bc_domain_db *db);
 #endif // _BC_DOMAIN_NAME_H_
