@@ -93,7 +93,7 @@ static void usage(int err)
 		printf("\t-d|--del domain_name,type 在type中删除域名\n");
 		printf("\t-r|--read type 显示数据库存储的域名\n");
 		printf("\t-s|--search domain_name,type 在type类别中搜索域名\n");
-		printf("\t-b|--build path,type 依据文件path内容重建type数据库");
+		printf("\t-b|--build path,type 依据文件path(或url)内容重建type数据库\n");
 		printf("\t-c|--clean type 清除数据库中的域名\n");
 		printf("\t-h|--help 显示本信息\n");
 		printf("\t-e|--debug 显示调试信息\n");
