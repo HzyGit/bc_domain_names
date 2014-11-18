@@ -16,6 +16,7 @@
 #include <errno.h>
 #include <error.h>
 #include <getopt.h>
+#include <curl/curl.h>
 
 #include <bigmem.h>
 #include "bc_domain_names.h"
@@ -275,10 +276,28 @@ static FILE* local_open(const char *path)
 	return fopen(path,"r");
 }
 
+/// @brief libcurl写文件回调函数
+static size_t write_data(void *ptr,size_t size,size_t nmeb,void *stream)
+{
+	int written = fwrite(ptr,size,nmeb,(FILE*)stream);
+	return written;
+}
+
 /// @breif 打开远程文件
 static FILE * remote_open(const char *url)
 {
-	return NULL;
+	FILE* fp = tmpfile();
+	if(fp==NULL)
+		return NULL;
+	CURL *curl;
+	curl = curl_easy_init();
+	curl_easy_setopt(curl,CURLOPT_URL,url);
+	curl_easy_setopt(curl,CURLOPT_WRITEFUNCTION,write_data);
+	curl_easy_setopt(curl,CURLOPT_WRITEDATA,fp);
+	curl_easy_perform(curl);
+	curl_easy_cleanup(curl);
+	rewind(fp);
+	return fp;
 }
 
 /// @brief 依据path获取fp指针, path为域名文件，或远程url域名文件
@@ -587,7 +606,8 @@ static int bc_domain_handle(const struct argument *argu,struct bc_domain_db *db)
 int main(int argc,char **argv)
 {
 	int err=0;
-
+	/// 初始化curl
+	curl_global_init(CURL_GLOBAL_ALL);
 	/// 载入冰川域名数据库
 	struct bc_domain_db db; 
 	if((load_bc_domain_db(PROC_PATH,&db))<0)
