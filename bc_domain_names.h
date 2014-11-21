@@ -12,7 +12,7 @@
 
 
 #ifndef USER_SPACE
-#include <bingchuan/bigmem.h>
+#include <bc_kern/bigmem.h>
 #else
 #include <stdbool.h>
 #include <bigmem.h>

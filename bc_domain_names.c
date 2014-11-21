@@ -17,6 +17,7 @@
 #include <error.h>
 #include <getopt.h>
 #include <curl/curl.h>
+#include <dns_crypt.h>
 
 #include <bigmem.h>
 #include "bc_domain_names.h"
@@ -52,7 +53,7 @@ struct option g_opts[]={
 /// 域名类型名称
 const char *g_domain_type[DOMAIN_TYPE_NUM]={
 	"webpage",
-	"blank",
+	"bank",
 	"download",
 	"multimedia",
 	"international",
@@ -77,6 +78,7 @@ struct argument
 		struct {
 			char path[MAX_PATH];
 			enum domain_type type;
+			char passwd[MAX_SECRET_LEN+1];
 		}dbfile;
 	}argu;
 }g_argu;
@@ -93,7 +95,7 @@ static void usage(int err)
 		printf("\t-d|--del domain_name,type 在type中删除域名\n");
 		printf("\t-r|--read type 显示数据库存储的域名\n");
 		printf("\t-s|--search domain_name,type 在type类别中搜索域名\n");
-		printf("\t-b|--build path,type 依据文件path(或url)内容重建type数据库\n");
+		printf("\t-b|--build path,type [passwd] 依据文件path(或url)内容重建type数据库,passwd为文件加密密钥\n");
 		printf("\t-c|--clean type 清除数据库中的域名\n");
 		printf("\t-h|--help 显示本信息\n");
 		printf("\t-e|--debug 显示调试信息\n");
@@ -145,7 +147,7 @@ static int parse_string(const char *str,struct argument *argu)
 			err=-EINVAL;
 			break;
 		}
-		if(argu->handle==BUILD_HANDLE)
+		if(argu->handle!=BUILD_HANDLE)
 		{
 			strncpy(argu->argu.domain.name,tok,DOMAIN_MAX_LENGTH-1);
 			argu->argu.domain.name[DOMAIN_MAX_LENGTH-1]='\0';
@@ -163,7 +165,7 @@ static int parse_string(const char *str,struct argument *argu)
 		}
 		if((err=parse_domain_type(tok))<0)
 			break;
-		if(argu->handle==BUILD_HANDLE)
+		if(argu->handle!=BUILD_HANDLE)
 			argu->argu.domain.type=(enum domain_type)err;
 		else
 			argu->argu.dbfile.type=(enum domain_type)err;
@@ -254,6 +256,16 @@ static void parse_argument(int argc,char **argv)
 		};
 		no_argu=false;
 	};
+	/// set passwd
+	if(BUILD_HANDLE==g_argu.handle)
+	{
+		memset(g_argu.argu.dbfile.passwd,0,MAX_SECRET_LEN+1);
+		if(optind<=argc-1)
+		{
+			strncpy(g_argu.argu.dbfile.passwd,argv[optind],MAX_SECRET_LEN);
+			g_argu.argu.dbfile.passwd[MAX_SECRET_LEN]='\0';
+		}
+	}
 	if(no_argu)
 		usage(EXIT_SUCCESS);
 }
@@ -450,6 +462,8 @@ static int build_bc_domain_db(const struct argument *argu,struct bc_domain_db *d
 		error_at_line(0,errno,__FILE__,__LINE__,"open %s failed",argu->argu.dbfile.path);
 		return -errno;
 	}
+	/// 初始化dns加密程序
+	init_encrypt(g_argu.argu.dbfile.passwd,DECRYPT);
 	/// 重置bc_domain_names
 	db->domain_names.domain_type_len[type]=0;
 	/// 读取文件重建db
@@ -467,10 +481,14 @@ static int build_bc_domain_db(const struct argument *argu,struct bc_domain_db *d
 			break;
 		}
 		/// 写入db
-		size_t len=strlen(line)-1;
+		char *content=encrypt(line);
+		if(NULL==content)
+			continue;
+		size_t len=strlen(content)-1;
 		struct domain_name name;
 		len=len>=DOMAIN_MAX_LENGTH-1?DOMAIN_MAX_LENGTH-1:len;
-		memcpy(name.name,line,len);
+		memcpy(name.name,content,len);
+		free(content);
 		name.name[len]='\0';
 		name.is_vaild=true;
 		if((err=set_domain_name(&name,db,type,index))<0)
